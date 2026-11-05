@@ -1,0 +1,96 @@
+{
+  "evaluation_timestamp": "2026-09-17 12:54:24",
+  "overall_metrics": {
+    "detection_rate_pct": 100.0,
+    "false_positives": 0,
+    "avg_pipeline_latency_ms": 27.21,
+    "cpu_usage_pct": 13.2,
+    "memory_usage_mb": 43.98,
+    "storage_usage_kb": 45.2,
+    "ess_accuracy_pct": 98.5,
+    "tcs_accuracy_pct": 96.8
+  },
+  "test_breakdown": [
+    {
+      "test_name": "Normal Activity",
+      "expected_alerts": 0,
+      "detected_alerts": 0,
+      "false_positives": 0,
+      "latency_ms": 108.67,
+      "ess_score": 100.0,
+      "tcs_score": 100.0
+    },
+    {
+      "test_name": "Log Deletion",
+      "expected_alerts": 1,
+      "detected_alerts": 1,
+      "false_positives": 0,
+      "latency_ms": 13.59,
+      "ess_score": 63.6,
+      "tcs_score": 77.3
+    },
+    {
+      "test_name": "Audit Shutdown",
+      "expected_alerts": 1,
+      "detected_alerts": 1,
+      "false_positives": 0,
+      "latency_ms": 12.91,
+      "ess_score": 77.3,
+      "tcs_score": 92.0
+    },
+    {
+      "test_name": "History Clearing",
+      "expected_alerts": 1,
+      "detected_alerts": 1,
+      "false_positives": 0,
+      "latency_ms": 13.18,
+      "ess_score": 90.9,
+      "tcs_score": 91.8
+    },
+    {
+      "test_name": "File Destruction",
+      "expected_alerts": 1,
+      "detected_alerts": 1,
+      "false_positives": 0,
+      "latency_ms": 11.43,
+      "ess_score": 100.0,
+      "tcs_score": 100.0
+    },
+    {
+      "test_name": "Timestamp Manipulation",
+      "expected_alerts": 1,
+      "detected_alerts": 1,
+      "false_positives": 0,
+      "latency_ms": 13.67,
+      "ess_score": 100.0,
+      "tcs_score": 92.5
+    },
+    {
+      "test_name": "Agent Termination",
+      "expected_alerts": 1,
+      "detected_alerts": 1,
+      "false_positives": 0,
+      "latency_ms": 13.77,
+      "ess_score": 100.0,
+      "tcs_score": 75.0
+    },
+    {
+      "test_name": "Collector Disconnect",
+      "expected_alerts": 1,
+      "detected_alerts": 1,
+      "false_positives": 0,
+      "latency_ms": 1.29,
+      "ess_score": 100.0,
+      "tcs_score": 88.3
+    },
+    {
+      "test_name": "Combined Anti-Forensics",
+      "expected_alerts": 4,
+      "detected_alerts": 4,
+      "false_positives": 0,
+      "latency_ms": 56.35,
+      "ess_score": 54.5,
+      "tcs_score": 69.1
+    }
+  ]
+}

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHRONOS-FL — Cyber Forensic Flight Recorder Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-sidebar: #0f172a;
+            --bg-header: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #26354a;
+            --border-color: #334155;
+            --accent-blue: #38bdf8;
+            --accent-blue-dim: rgba(56, 189, 248, 0.15);
+            --accent-green: #22c55e;
+            --accent-green-dim: rgba(34, 197, 94, 0.15);
+            --accent-red: #ef4444;
+            --accent-red-dim: rgba(239, 68, 68, 0.15);
+            --accent-amber: #f59e0b;
+            --accent-amber-dim: rgba(245, 158, 11, 0.15);
+            --accent-purple: #a855f7;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --font-ui: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        aside {
+            width: 270px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .sidebar-brand {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-blue), #0284c7);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #000;
+            font-size: 1.2rem;
+        }
+        .brand-title { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.5px; color: var(--text-primary); }
+        .brand-sub { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .nav-list { list-style: none; padding: 15px 10px; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; flex: 1; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 12px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .nav-item:hover { background-color: rgba(255,255,255,0.05); color: var(--text-primary); }
+        .nav-item.active { background-color: var(--accent-blue-dim); color: var(--accent-blue); font-weight: 600; border-left: 3px solid var(--accent-blue); }
+        .nav-icon { font-size: 1.05rem; width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .status-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        header {
+            height: 60px;
+            background-color: var(--bg-header);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+        }
+        .page-title-box { display: flex; align-items: center; gap: 15px; }
+        .page-title { font-size: 1.2rem; font-weight: 600; }
+        .case-badge {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border-color);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent-blue);
+        }
+
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .btn {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+        .btn:hover { background-color: var(--bg-card-hover); border-color: #475569; }
+        .btn-primary { background-color: var(--accent-blue); color: #000; border: none; font-weight: 600; }
+        .btn-primary:hover { background-color: #7dd3fc; }
+        .btn-purple { background-color: var(--accent-purple); color: #fff; border: none; font-weight: 600; }
+        .btn-danger { background-color: var(--accent-red-dim); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .btn-danger:hover { background-color: var(--accent-red); color: #fff; }
+
+        .content-container { flex: 1; padding: 25px; overflow-y: auto; }
+        .view-panel { display: none; flex-direction: column; gap: 20px; }
+        .view-panel.active { display: flex; }
+
+        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 18px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .card-title { font-size: 0.88rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .stat-value { font-size: 2.2rem; font-weight: 700; font-family: var(--font-mono); margin: 6px 0; }
+        .stat-sub { font-size: 0.78rem; color: var(--text-muted); }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-green { background: var(--accent-green-dim); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .badge-amber { background: var(--accent-amber-dim); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+        .badge-red { background: var(--accent-red-dim); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .badge-blue { background: var(--accent-blue-dim); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+        .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid var(--accent-purple); }
+
+        .assessment-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #3b82f6;
+            border-left: 5px solid var(--accent-blue);
+            padding: 22px;
+            border-radius: 8px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .assessment-icon { font-size: 2rem; }
+        .assessment-title { font-size: 1.05rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px; }
+        .assessment-body { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; }
+
+        .gauge-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; }
+        .gauge-svg { width: 160px; height: 160px; }
+        .gauge-bg { fill: none; stroke: var(--border-color); stroke-width: 14; }
+        .gauge-fill { fill: none; stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+        .gauge-center-text { font-size: 1.8rem; font-weight: 700; font-family: var(--font-mono); fill: var(--text-primary); text-anchor: middle; dominant-baseline: middle; }
+
+        .dfir-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+        .dfir-table th { background-color: rgba(15, 23, 42, 0.6); color: var(--text-muted); text-align: left; padding: 12px 14px; font-weight: 600; border-bottom: 1px solid var(--border-color); }
+        .dfir-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+        .dfir-table tr:hover { background-color: rgba(255,255,255,0.02); }
+        .dfir-table tr.suspicious { background-color: rgba(239, 68, 68, 0.08); }
+        .code-text { font-family: var(--font-mono); color: var(--accent-blue); font-size: 0.82rem; }
+
+        .timeline-wrapper { position: relative; padding-left: 30px; display: flex; flex-direction: column; gap: 20px; }
+        .timeline-wrapper::before { content: ''; position: absolute; left: 12px; top: 10px; bottom: 10px; width: 2px; background-color: var(--border-color); }
+        .timeline-node { position: relative; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; }
+        .timeline-node::before {
+            content: ''; position: absolute; left: -24px; top: 20px; width: 12px; height: 12px; border-radius: 50%;
+            background-color: var(--accent-blue); border: 3px solid var(--bg-main);
+        }
+        .timeline-node.suspicious::before { background-color: var(--accent-red); }
+        .timeline-node-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .timeline-stage { font-weight: 600; color: var(--accent-blue); font-size: 0.9rem; }
+        .timeline-time { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); }
+        .timeline-cmd { font-family: var(--font-mono); background: #090d16; padding: 8px 12px; border-radius: 4px; color: #e2e8f0; font-size: 0.84rem; margin: 8px 0; border: 1px solid #1e293b; }
+        .timeline-meta { display: flex; gap: 15px; font-size: 0.78rem; color: var(--text-muted); }
+
+        .tab-bar { display: flex; border-bottom: 1px solid var(--border-color); gap: 15px; margin-bottom: 15px; }
+        .tab-btn { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab-btn.active { color: var(--accent-blue); font-weight: 600; border-bottom-color: var(--accent-blue); }
+
+        #cy { width: 100%; height: 450px; background: #090d16; border-radius: 6px; border: 1px solid var(--border-color); }
+
+        .chat-box { display: flex; flex-direction: column; gap: 12px; height: 350px; overflow-y: auto; background: #090d16; padding: 16px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .chat-msg { padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; max-width: 85%; line-height: 1.5; }
+        .chat-msg.user { background: var(--accent-blue-dim); color: var(--accent-blue); align-self: flex-end; border: 1px solid var(--accent-blue); }
+        .chat-msg.ai { background: var(--bg-card); color: var(--text-primary); align-self: flex-start; border: 1px solid var(--border-color); }
+
+        textarea { width: 100%; height: 120px; background-color: #090d16; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; color: var(--text-primary); font-family: var(--font-ui); font-size: 0.9rem; resize: vertical; }
+        textarea:focus { outline: none; border-color: var(--accent-blue); }
+    </style>
+</head>
+<body>
+    <aside>
+        <div class="sidebar-brand">
+            <div class="brand-logo">🛰️</div>
+            <div>
+                <div class="brand-title">CHRONOS-FL</div>
+                <div class="brand-sub">Flight Recorder Platform</div>
+            </div>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item active" onclick="switchNav('overview')"><span class="nav-icon">🏠</span> Overview</li>
+            <li class="nav-item" onclick="switchNav('incidents')"><span class="nav-icon">🚨</span> Incidents</li>
+            <li class="nav-item" onclick="switchNav('timeline')"><span class="nav-icon">📅</span> Timeline</li>
+            <li class="nav-item" onclick="switchNav('evidence')"><span class="nav-icon">🔍</span> Evidence Telemetry</li>
+            <li class="nav-item" onclick="switchNav('graph')"><span class="nav-icon">🕸</span> Evidence Graph</li>
+            <li class="nav-item" onclick="switchNav('alerts')"><span class="nav-icon">⚠️</span> Anti-Forensics</li>
+            <li class="nav-item" onclick="switchNav('ess')"><span class="nav-icon">🛡️</span> Survivability (ESS)</li>
+            <li class="nav-item" onclick="switchNav('tcs')"><span class="nav-icon">🎯</span> Confidence (TCS)</li>
+            <li class="nav-item" onclick="switchNav('snapshots')"><span class="nav-icon">📸</span> Snapshots</li>
+            <li class="nav-item" onclick="switchNav('ledger')"><span class="nav-icon">📚</span> Evidence Ledger</li>
+            <li class="nav-item" onclick="switchNav('ai')"><span class="nav-icon">🤖</span> AI Investigator</li>
+            <li class="nav-item" onclick="switchNav('cases')"><span class="nav-icon">📁</span> Case Workspace</li>
+        </ul>
+        <div class="sidebar-footer">
+            <div><span class="status-indicator"></span> Flight Recorder Active</div>
+            <div>v1.0.0</div>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="page-title-box">
+                <div id="header-title" class="page-title">Evidence Overview</div>
+                <div class="case-badge" id="header-case-id">CAS-2026-0915-01</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn" onclick="triggerRefresh()">↻ Refresh Data</button>
+                <button class="btn btn-primary" onclick="exportReport()">📥 Export Report</button>
+            </div>
+        </header>
+
+        <div class="content-container">
+            <!-- 1. Overview -->
+            <div id="view-overview" class="view-panel active">
+                <div class="grid-5">
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Survivability (ESS)</span></div>
+                        <div class="stat-value" id="card-ess-val" style="color:var(--accent-amber);">--%</div>
+                        <div class="stat-sub" id="card-ess-sub">Surviving Evidence Sources</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Confidence (TCS)</span></div>
+                        <div class="stat-value" id="card-tcs-val" style="color:var(--accent-amber);">--%</div>
+                        <div class="stat-sub" id="card-tcs-sub">Reconstruction Trust</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Anti-Forensics</span></div>
+                        <div class="stat-value" id="card-alerts-val" style="color:var(--accent-red);">0</div>
+                        <div class="stat-sub">Evidence destruction events</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Evidence Gaps</span></div>
+                        <div class="stat-value" id="card-gaps-val" style="color:var(--accent-purple);">0</div>
+                        <div class="stat-sub">Telemetry silence periods</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Ledger Integrity</span></div>
+                        <div style="margin-top:8px;"><span id="card-ledger-badge" class="badge badge-green">INTACT</span></div>
+                        <div class="stat-sub" style="margin-top:10px;" id="card-ledger-sub">SHA-256 Hash Chain</div>
+                    </div>
+                </div>
+
+                <div class="assessment-card">
+                    <div class="assessment-icon">🕵️‍♂️</div>
+                    <div>
+                        <div class="assessment-title">Forensic Flight Recorder Assessment</div>
+                        <div class="assessment-body" id="assessment-text">
+                            Analyzing telemetry...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Recent Timeline Events</span></div>
+                        <table class="dfir-table">
+                            <thead>
+                                <tr><th>Category</th><th>Stage</th><th>PID</th><th>Summary</th></tr>
+                            </thead>
+                            <tbody id="overview-timeline-body">
+                                <tr><td colspan="4">Loading timeline events...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Anti-Forensics Detections</span></div>
+                        <div id="overview-alerts-list" style="display:flex; flex-direction:column; gap:10px; max-height:280px; overflow-y:auto;">
+                            Loading alerts...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Incidents -->
+            <div id="view-incidents" class="view-panel">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Cyber Incident Summary</span></div>
+                    <div id="incidents-content" style="font-size:0.9rem; line-height:1.6; color:var(--text-secondary);">
+                        Loading incident summary...
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Timeline -->
+            <div id="view-timeline" class="view-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Reconstructed Forensic Timeline</span>
+                        <input type="text" id="timeline-search" placeholder="Search events, PIDs, commands..." onkeyup="filterTimeline()" style="background:#090d16; border:1px solid var(--border-color); color:#fff; padding:6px 12px; border-radius:4px; font-size:0.82rem; width:280px;">
+                    </div>
+                    <div class="timeline-wrapper" id="timeline-flow-body"></div>
+                </div>
+            </div>
+
+            <!-- 4. Evidence Telemetry -->
+            <div id="view-evidence" class="view-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Module 3 Evidence Repository (Normalized Telemetry)</span>
+                        <button class="btn btn-primary" onclick="exportReport()">Export Evidence Archive</button>
+                    </div>
+                    <table class="dfir-table">
+                        <thead>
+                            <tr><th>Event ID</th><th>Timestamp</th><th>Type</th><th>PID</th><th>Process</th><th>Command / Target</th><th>Hash</th></tr>
+                        </thead>
+                        <tbody id="evidence-table-body">
+                            <tr><td colspan="7">Loading normalized telemetry...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 5. Evidence Graph -->
+            <div id="view-graph" class="view-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Module 10 Evidence Causality Graph</span>
+                        <button class="btn btn-purple" onclick="exportNeo4j()">Export to Neo4j Graph DB</button>
+                    </div>
+                    <div id="cy"></div>
+                </div>
+            </div>
+
+            <!-- 6. Alerts -->
+            <div id="view-alerts" class="view-panel">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Module 5 Anti-Forensics Detections</span></div>
+                    <table class="dfir-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Severity</th>
+                                <th>Command / Action</th>
+                                <th>Affected Artifacts</th>
+                                <th>Impact Penalty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alerts-table-body">
+                            <tr><td colspan="5">Loading anti-forensic alerts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 7. ESS -->
+            <div id="view-ess" class="view-panel">
+                <div class="card gauge-container">
+                    <div class="card-title" style="margin-bottom:15px;">Evidence Survivability Score (ESS)</div>
+                    <svg class="gauge-svg" viewBox="0 0 100 100">
+                        <circle class="gauge-bg" cx="50" cy="50" r="40" />
+                        <circle id="gauge-ess-circle" class="gauge-fill" cx="50" cy="50" r="40" stroke="var(--accent-amber)" stroke-dasharray="251.2" stroke-dashoffset="125.6" transform="rotate(-90 50 50)" />
+                        <text id="gauge-ess-text" x="50" y="50" class="gauge-center-text">--%</text>
+                    </svg>
+                    <div class="stat-sub" style="margin-top:10px;" id="gauge-ess-sub">Surviving Evidence Vectors</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Evidence Source Health Matrix</span></div>
+                    <table class="dfir-table">
+                        <thead>
+                            <tr><th>Evidence Vector</th><th>Status</th><th>Weight</th><th>Details / Findings</th></tr>
+                        </thead>
+                        <tbody id="health-matrix-body">
+                            <tr><td colspan="4">Loading health matrix...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 8. TCS -->
+            <div id="view-tcs" class="view-panel">
+                <div class="card gauge-container">
+                    <div class="card-title" style="margin-bottom:15px;">Timeline Confidence Score (TCS)</div>
+                    <svg class="gauge-svg" viewBox="0 0 100 100">
+                        <circle class="gauge-bg" cx="50" cy="50" r="40" />
+                        <circle id="gauge-tcs-circle" class="gauge-fill" cx="50" cy="50" r="40" stroke="var(--accent-amber)" stroke-dasharray="251.2" stroke-dashoffset="125.6" transform="rotate(-90 50 50)" />
+                        <text id="gauge-tcs-text" x="50" y="50" class="gauge-center-text">--%</text>
+                    </svg>
+                    <div class="stat-sub" style="margin-top:10px;" id="gauge-tcs-sub">Reconstruction Trust Score</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Confidence Deductions & Penalties Breakdown</span></div>
+                    <div id="tcs-penalties-list" style="display:flex; flex-direction:column; gap:10px;">
+                        Loading TCS penalties...
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Snapshots -->
+            <div id="view-snapshots" class="view-panel">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Module 8 Captured System State Snapshots</span></div>
+                    <div class="tab-bar">
+                        <div class="tab-btn active" onclick="switchSnapTab('procs')">Running Processes</div>
+                        <div class="tab-btn" onclick="switchSnapTab('conns')">Network Connections</div>
+                        <div class="tab-btn" onclick="switchSnapTab('files')">Open Files</div>
+                        <div class="tab-btn" onclick="switchSnapTab('mods')">Kernel Modules</div>
+                    </div>
+                    <div id="snap-tab-content" style="font-family:var(--font-mono); background:#090d16; padding:16px; border-radius:6px; font-size:0.82rem; max-height:400px; overflow-y:auto; color:#cbd5e1;">
+                        Select snapshot tab.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10. Ledger -->
+            <div id="view-ledger" class="view-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Module 4 Cryptographic Tamper-Evident Evidence Ledger</span>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-danger" onclick="tamperLedgerTest()">⚠️ Test Tamper Detection</button>
+                            <button class="btn" onclick="resetLedger()">↻ Reset Ledger</button>
+                        </div>
+                    </div>
+                    <div id="ledger-chunks-container" style="display:flex; flex-direction:column; gap:14px;">
+                        Loading ledger...
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. AI Investigator -->
+            <div id="view-ai" class="view-panel">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Module 13 RAG AI Forensic Assistant</span></div>
+                    <div class="chat-box" id="chat-messages">
+                        <div class="chat-msg ai">Hello Analyst. I am the CHRONOS-FL RAG Forensic Assistant. Ask me anything about the attack path, evidence, ESS, or TCS penalties.</div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <input type="text" id="ai-input" placeholder="Ask AI: 'What happened?', 'Why was TCS reduced?', 'Show attack path'..." onkeydown="if(event.key==='Enter') sendAIQuery()" style="flex:1; background:#090d16; border:1px solid var(--border-color); color:#fff; padding:10px 14px; border-radius:6px; font-size:0.9rem;">
+                        <button class="btn btn-primary" onclick="sendAIQuery()">Send Query</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12. Case Workspace -->
+            <div id="view-cases" class="view-panel">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Investigation Case Workspace</span></div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:0.88rem; margin-bottom:15px;">
+                        <div><strong>Case ID:</strong> <span class="code-text" id="case-id">CAS-2026-0915-01</span></div>
+                        <div><strong>Subject Host:</strong> <span class="code-text" id="case-host">victim_host_01</span></div>
+                        <div><strong>Investigator:</strong> <span id="case-investigator">Lead DFIR Analyst</span></div>
+                        <div><strong>Status:</strong> <span class="badge badge-blue">Active Investigation</span></div>
+                    </div>
+                    <div style="margin-top:15px;">
+                        <label style="font-size:0.85rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:8px;">Analyst Case Notes</label>
+                        <textarea id="case-notes-text"></textarea>
+                        <button class="btn btn-primary" onclick="saveNotes()" style="margin-top:10px;">💾 Save Analyst Notes</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        let currentNav = 'overview';
+        let globalData = {};
+        let cyInstance = null;
+
+        function switchNav(navId) {
+            currentNav = navId;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
+
+            const activeNav = Array.from(document.querySelectorAll('.nav-item')).find(el => el.textContent.toLowerCase().includes(navId));
+            if (activeNav) activeNav.classList.add('active');
+
+            const panel = document.getElementById('view-' + navId);
+            if (panel) panel.classList.add('active');
+
+            if (navId === 'graph') {
+                setTimeout(initCytoscape, 100);
+            }
+        }
+
+        async function triggerRefresh() {
+            try {
+                const [scores, timeline, alerts, ledger, snapshots, cases, graph, gaps, incidents, events] = await Promise.all([
+                    fetch('/api/trust/scores').then(r => r.json()),
+                    fetch('/api/timeline').then(r => r.json()),
+                    fetch('/api/alerts').then(r => r.json()),
+                    fetch('/api/ledger').then(r => r.json()),
+                    fetch('/api/snapshots').then(r => r.json()),
+                    fetch('/api/cases').then(r => r.json()),
+                    fetch('/api/graph').then(r => r.json()),
+                    fetch('/api/gaps').then(r => r.json()),
+                    fetch('/api/incidents').then(r => r.json()),
+                    fetch('/api/events').then(r => r.json())
+                ]);
+
+                globalData = { scores, timeline, alerts, ledger, snapshots, cases, graph, gaps, incidents, events };
+
+                renderOverview(scores, timeline, alerts, ledger, snapshots, gaps);
+                renderIncidents(incidents);
+                renderTimeline(timeline);
+                renderEvidence(events);
+                renderAlerts(alerts);
+                renderSnapshots(snapshots);
+                renderLedger(ledger);
+                renderTrust(scores);
+                renderCases(cases);
+
+                if (currentNav === 'graph') initCytoscape();
+            } catch(e) {
+                console.error("Refresh error:", e);
+            }
+        }
+
+        function renderOverview(scores, timeline, alerts, ledger, snapshots, gaps) {
+            const ess = scores.ess.ess_score;
+            const tcs = scores.tcs.tcs_score;
+
+            document.getElementById('card-ess-val').innerText = ess + '%';
+            document.getElementById('card-tcs-val').innerText = tcs + '%';
+            document.getElementById('card-alerts-val').innerText = alerts.length;
+            document.getElementById('card-snaps-val').innerText = snapshots.length;
+            document.getElementById('card-gaps-val').innerText = gaps.length;
+
+            const lBadge = document.getElementById('card-ledger-badge');
+            lBadge.innerText = ledger.is_valid ? 'INTACT' : 'TAMPERED';
+            lBadge.className = 'badge ' + (ledger.is_valid ? 'badge-green' : 'badge-red');
+
+            if (alerts.length > 0 || gaps.length > 0) {
+                document.getElementById('assessment-text').innerHTML = 
+                    `<strong>Anti-forensic actions or telemetry gaps detected!</strong> Anti-forensic alerts: <strong>${alerts.length}</strong>, Telemetry Gaps: <strong>${gaps.length}</strong>. Evidence survivability is at <strong>${ess}%</strong> with timeline confidence TCS: <strong>${tcs}%</strong>.`;
+            } else {
+                document.getElementById('assessment-text').innerHTML = 
+                    `Telemetry Intact. Evidence survivability is <strong>100%</strong> with verified confidence (TCS: <strong>${tcs}%</strong>).`;
+            }
+
+            const body = document.getElementById('overview-timeline-body');
+            body.innerHTML = timeline.slice(-6).map(t => 
+                `<tr class="${t.suspicious ? 'suspicious' : ''}">
+                    <td><span class="badge ${t.suspicious ? 'badge-red' : 'badge-blue'}">${t.category || 'Observed'}</span></td>
+                    <td><strong>${t.stage}</strong></td>
+                    <td>${t.pid}</td>
+                    <td class="code-text">${t.summary.slice(0, 45)}</td>
+                 </tr>`
+            ).join('') || '<tr><td colspan="4">No events.</td></tr>';
+
+            const aList = document.getElementById('overview-alerts-list');
+            aList.innerHTML = alerts.map(a => 
+                `<div style="background:#090d16; padding:10px; border-radius:6px; border-left:3px solid var(--accent-red);">
+                    <div style="font-weight:600; font-size:0.82rem; color:var(--accent-red);">${a.category}</div>
+                    <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:3px;">${a.description}</div>
+                 </div>`
+            ).join('') || '<div style="font-size:0.85rem; color:var(--text-muted);">No anti-forensic alerts detected.</div>';
+        }
+
+        function renderIncidents(incidents) {
+            const box = document.getElementById('incidents-content');
+            box.innerHTML = `
+                <div><strong>Case Title:</strong> ${incidents.case_state.title}</div>
+                <div><strong>Subject Host:</strong> ${incidents.case_state.subject_host}</div>
+                <div><strong>Investigator:</strong> ${incidents.case_state.investigator}</div>
+                <div style="margin-top:12px;"><strong>Analyst Summary Notes:</strong></div>
+                <div style="background:#090d16; padding:12px; border-radius:6px; font-family:var(--font-mono); font-size:0.85rem; margin-top:6px; border:1px solid var(--border-color);">${incidents.case_state.analyst_notes}</div>
+            `;
+        }
+
+        function renderTimeline(timeline) {
+            const wrapper = document.getElementById('timeline-flow-body');
+            wrapper.innerHTML = timeline.map(t => {
+                const dateStr = new Date(t.timestamp * 1000).toLocaleTimeString();
+                return `
+                    <div class="timeline-node ${t.suspicious ? 'suspicious' : ''}">
+                        <div class="timeline-node-header">
+                            <span class="timeline-stage">${t.suspicious ? '⚠️ ' : ''}${t.stage} (${t.category || 'Observed'})</span>
+                            <span class="timeline-time">${dateStr}</span>
+                        </div>
+                        <div class="timeline-cmd">${t.summary}</div>
+                        <div class="timeline-meta">
+                            <span>PID: ${t.pid}</span>
+                            <span>Source: ${t.evidence_source}</span>
+                            <span>Evidence ID: ${t.evidence_id || 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div style="color:var(--text-muted);">No timeline data.</div>';
+        }
+
+        function filterTimeline() {
+            const query = document.getElementById('timeline-search').value.toLowerCase();
+            document.querySelectorAll('.timeline-node').forEach(node => {
+                const text = node.innerText.toLowerCase();
+                node.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        }
+
+        function renderEvidence(events) {
+            const body = document.getElementById('evidence-table-body');
+            body.innerHTML = events.map(e => `
+                <tr>
+                    <td class="code-text">${(e.event_id || '').slice(0, 8)}</td>
+                    <td>${e.timestamp}</td>
+                    <td><span class="badge badge-blue">${e.event_type}</span></td>
+                    <td>${e.pid}</td>
+                    <td class="code-text">${e.process}</td>
+                    <td class="code-text">${(e.command || e.path || '').slice(0, 40)}</td>
+                    <td class="code-text">${(e.evidence_hash || '').slice(0, 10)}...</td>
+                </tr>
+            `).join('') || '<tr><td colspan="7">No evidence records.</td></tr>';
+        }
+
+        function initCytoscape() {
+            const gData = globalData.graph || { nodes: [], edges: [] };
+            const cyElements = [];
+
+            (gData.nodes || []).forEach(n => {
+                cyElements.push({ data: { id: n.id, label: n.label || n.id, type: n.type } });
+            });
+
+            (gData.edges || []).forEach(e => {
+                cyElements.push({ data: { source: e.source, target: e.target, label: e.relation || 'connected' } });
+            });
+
+            if (cyInstance) cyInstance.destroy();
+
+            cyInstance = cytoscape({
+                container: document.getElementById('cy'),
+                elements: cyElements,
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#38bdf8',
+                            'label': 'data(label)',
+                            'color': '#f8fafc',
+                            'font-size': '11px',
+                            'font-family': 'JetBrains Mono',
+                            'text-valign': 'bottom',
+                            'text-margin-y': 5
+                        }
+                    },
+                    {
+                        selector: 'node[type="User"]',
+                        style: { 'background-color': '#22c55e' }
+                    },
+                    {
+                        selector: 'node[type="File"]',
+                        style: { 'background-color': '#f59e0b' }
+                    },
+                    {
+                        selector: 'node[type="IP"]',
+                        style: { 'background-color': '#ef4444' }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#475569',
+                            'target-arrow-color': '#475569',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(label)',
+                            'color': '#64748b',
+                            'font-size': '9px'
+                        }
+                    }
+                ],
+                layout: { name: 'cose', animate: false }
+            });
+        }
+
+        function renderAlerts(alerts) {
+            const body = document.getElementById('alerts-table-body');
+            body.innerHTML = alerts.map(a => 
+                `<tr>
+                    <td><strong style="color:var(--accent-red);">${a.category}</strong></td>
+                    <td><span class="badge badge-red">${a.impact_score || 'HIGH'}</span></td>
+                    <td class="code-text">${a.cmdline || a.description}</td>
+                    <td>${(a.affected_artifacts || []).join(', ')}</td>
+                    <td><span class="code-text" style="color:var(--accent-amber);">${a.trust_penalty || '-15% TCS'}</span></td>
+                 </tr>`
+            ).join('') || '<tr><td colspan="5">No alerts detected.</td></tr>';
+        }
+
+        function renderSnapshots(snapshots) {
+            window.snapData = snapshots;
+            switchSnapTab('procs');
+        }
+
+        function switchSnapTab(tab) {
+            const box = document.getElementById('snap-tab-content');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+            const snaps = window.snapData || [];
+            if (snaps.length === 0) {
+                box.innerText = "No snapshots captured.";
+                return;
+            }
+
+            const lastSnap = snaps[snaps.length - 1];
+
+            if (tab === 'procs') box.innerText = JSON.stringify(lastSnap.processes || [], null, 2);
+            else if (tab === 'conns') box.innerText = JSON.stringify(lastSnap.network_connections || [], null, 2);
+            else if (tab === 'files') box.innerText = JSON.stringify(lastSnap.open_files || [], null, 2);
+            else if (tab === 'mods') box.innerText = JSON.stringify(lastSnap.loaded_modules || [], null, 2);
+        }
+
+        function renderLedger(ledger) {
+            const container = document.getElementById('ledger-chunks-container');
+            container.innerHTML = ledger.chunks.map(c => 
+                `<div class="card" style="border-left: 4px solid ${ledger.is_valid ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                    <div class="card-header">
+                        <span class="card-title">Chunk #${c.chunk_id} (${c.events_count} Events)</span>
+                        <span class="badge ${ledger.is_valid ? 'badge-green' : 'badge-red'}">${ledger.is_valid ? 'INTACT' : 'CORRUPTED'}</span>
+                    </div>
+                    <div style="font-family:var(--font-mono); font-size:0.8rem; display:flex; flex-direction:column; gap:6px;">
+                        <div><strong>Chunk Hash:</strong> <span class="code-text">${c.chunk_hash}</span></div>
+                        <div><strong>Previous Hash:</strong> <span style="color:var(--text-muted);">${c.prev_hash}</span></div>
+                    </div>
+                 </div>`
+            ).join('') || '<div>No chunks sealed.</div>';
+        }
+
+        function renderTrust(scores) {
+            const ess = scores.ess.ess_score;
+            const tcs = scores.tcs.tcs_score;
+
+            document.getElementById('gauge-ess-text').textContent = ess + '%';
+            document.getElementById('gauge-ess-circle').style.strokeDashoffset = 251.2 - (251.2 * ess / 100);
+
+            document.getElementById('gauge-tcs-text').textContent = tcs + '%';
+            document.getElementById('gauge-tcs-circle').style.strokeDashoffset = 251.2 - (251.2 * tcs / 100);
+
+            const healthBody = document.getElementById('health-matrix-body');
+            healthBody.innerHTML = scores.ess.sources.map(s => {
+                const isOk = s.status === 'Present';
+                return `
+                    <tr>
+                        <td><strong>${s.source_name}</strong></td>
+                        <td><span class="badge ${isOk ? 'badge-green' : 'badge-red'}">${isOk ? '✓ Present' : '✗ Lost'}</span></td>
+                        <td>${s.weight}</td>
+                        <td>${s.details}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const pList = document.getElementById('tcs-penalties-list');
+            pList.innerHTML = (scores.tcs.penalties || []).map(p => `
+                <div style="background:#090d16; padding:12px; border-radius:6px; border-left:3px solid var(--accent-amber);">
+                    <div style="font-weight:600; font-size:0.88rem; color:var(--accent-amber);">${p.factor} (-${p.penalty}%)</div>
+                    <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">${p.details}</div>
+                </div>
+            `).join('') || '<div style="color:var(--text-muted);">No TCS penalties applied. Perfect 100% score!</div>';
+        }
+
+        function renderCases(cases) {
+            document.getElementById('case-id').innerText = cases.case_id;
+            document.getElementById('case-host').innerText = cases.subject_host;
+            document.getElementById('case-investigator').innerText = cases.investigator;
+            document.getElementById('case-notes-text').value = cases.analyst_notes || '';
+        }
+
+        async function sendAIQuery() {
+            const input = document.getElementById('ai-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const box = document.getElementById('chat-messages');
+            box.innerHTML += `<div class="chat-msg user">${query}</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            try {
+                const res = await fetch('/api/ai-investigator/query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ query })
+                }).then(r => r.json());
+
+                box.innerHTML += `<div class="chat-msg ai">${res.answer.replace(/\n/g, '<br>')}</div>`;
+                box.scrollTop = box.scrollHeight;
+            } catch(e) {
+                box.innerHTML += `<div class="chat-msg ai" style="color:var(--accent-red);">Error querying AI assistant.</div>`;
+            }
+        }
+
+        async function exportNeo4j() {
+            await fetch('/api/graph/export-neo4j', { method: 'POST' });
+            alert('Graph structure exported to Neo4j database.');
+        }
+
+        async function saveNotes() {
+            const notes = document.getElementById('case-notes-text').value;
+            await fetch('/api/cases/notes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ notes })
+            });
+            alert('Analyst Notes Saved Successfully.');
+        }
+
+        async function tamperLedgerTest() {
+            await fetch('/api/ledger/tamper-test', { method: 'POST' });
+            alert('Malicious Ledger Tampering Triggered on Chunk 0! Check Ledger & TCS Score.');
+            triggerRefresh();
+        }
+
+        async function resetLedger() {
+            await fetch('/api/ledger/reset', { method: 'POST' });
+            alert('Ledger State Reset.');
+            triggerRefresh();
+        }
+
+        async function exportReport() {
+            const r = await fetch('/api/export/report').then(res => res.json());
+            const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${r.report_id}_Forensic_Report.json`;
+            a.click();
+        }
+
+        triggerRefresh();
+        setInterval(triggerRefresh, 4000);
+    </script>
+</body>
+</html>
